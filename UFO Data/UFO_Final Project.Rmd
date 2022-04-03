@@ -35,6 +35,7 @@ ufo$Country <-  as.factor(ufo$Country)
 #ufo$Date_Posted <- as.Date.POSIXlt(ufo$Date_Posted)
 ufo$Latitude <- as.double(ufo$Latitude)
 ufo$Longitude <- as.double(ufo$Longitude)
+ufo$City <- as.factor(ufo$City)
 ufo
 ```
 
@@ -43,6 +44,7 @@ ufo
 ```{r}
 ufo %>%
   group_by(Country)%>%
+  filter(na.rm = TRUE)%>%
   filter(n() >= 200)%>%
   ggplot() +
   geom_bar(aes(x = Country, fill = Country))+ 
@@ -59,7 +61,9 @@ It's noteworthy that Australia, India, and Mexico are displayed on this graph as
 ## **Which States from the USA?**
 ```{r}
 ufo %>%
+  filter(na.rm = TRUE)%>%
   filter(Country == "United States")%>%
+  filter(n() >= 100)%>%
   ggplot()+
   geom_bar(aes(x = State_Province, fill = State_Province))+ 
   coord_flip()+
@@ -98,4 +102,35 @@ ufo %>%
 
 Light is the most frequent response. 
 However, this is followed up by circularity and triangular shapes. 
+
+
+
+# ***Oh, Florida:***
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  filter(State_Province == "fl")%>%
+  ggplot()+
+  geom_bar(aes(x = Shape, fill = Shape))+ 
+  coord_flip()+
+  labs(title = "Shape Tendencies for Florida", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
+
+## Locations of Reports in FL
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  filter(State_Province == "fl")%>%
+  group_by(City)%>%
+  filter(count(City) >= 100)%>%
+  ggplot()+
+  geom_bar(aes(x = City), pch = 321)+ 
+  coord_flip()
+  labs(title = "Shape Tendencies for Florida")+
+    theme(legend.position ="none")
+```
 
