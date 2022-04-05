@@ -22,20 +22,22 @@ library(dplyr)
 library(openxlsx)
 library(tidytext)
 library(forcats)
+library(lubridate)
+library(data.table)
 ```
 
 # ***Data Frame Creation:***
 ```{r}
-ufo <- read.xlsx("ufo-complete-geocoded-time-standardized.xlsx")
-#ufo$Date <- as.Date.POSIXlt(ufo$Date)
+ufo <- data.table::fread("ufo-complete-geocoded-time-standardized.csv")
 ufo$Seconds <- as.double(ufo$Seconds)
 ufo$Shape <- as.factor(ufo$Shape)
 ufo$State_Province <- as.factor(ufo$State_Province)
 ufo$Country <-  as.factor(ufo$Country)
-#ufo$Date_Posted <- as.Date.POSIXlt(ufo$Date_Posted)
 ufo$Latitude <- as.double(ufo$Latitude)
 ufo$Longitude <- as.double(ufo$Longitude)
 ufo$City <- as.factor(ufo$City)
+ufo$Date <- as.Date(ufo$Date, format = "%m/%d/%Y")
+ufo$Time <- as.ITime(ufo$Time, tz = "GMT")
 ufo
 ```
 
@@ -44,7 +46,6 @@ ufo
 ```{r}
 ufo %>%
   group_by(Country)%>%
-  filter(na.rm = TRUE)%>%
   filter(n() >= 200)%>%
   ggplot() +
   geom_bar(aes(x = Country, fill = Country))+ 
@@ -61,9 +62,9 @@ It's noteworthy that Australia, India, and Mexico are displayed on this graph as
 ## **Which States from the USA?**
 ```{r}
 ufo %>%
-  filter(na.rm = TRUE)%>%
   filter(Country == "United States")%>%
-  filter(n() >= 100)%>%
+  group_by(State_Province)%>%
+  filter(n() >= 1000)%>%
   ggplot()+
   geom_bar(aes(x = State_Province, fill = State_Province))+ 
   coord_flip()+
@@ -79,6 +80,8 @@ Will work on the visualization, but as we can see, California has some of the hi
 ```{r}
 ufo %>%
   filter(Country == "United States")%>%
+  group_by(State_Province)%>%
+  filter(n() >= 1000)%>%
   ggplot()+
   geom_col(aes(x = State_Province, y = Time, fill = State_Province))+ 
   coord_flip()+
@@ -92,6 +95,8 @@ ufo %>%
 ```{r}
 ufo %>%
   filter(Country == "United States")%>%
+  group_by(Shape)%>%
+  filter(n() >= 1000)%>%
   ggplot()+
   geom_bar(aes(x = Shape, fill = Shape))+ 
   coord_flip()+
@@ -110,6 +115,8 @@ However, this is followed up by circularity and triangular shapes.
 ufo %>%
   filter(Country == "United States")%>%
   filter(State_Province == "fl")%>%
+  group_by(Shape)%>%
+  filter(n() >= 100)%>%
   ggplot()+
   geom_bar(aes(x = Shape, fill = Shape))+ 
   coord_flip()+
@@ -125,11 +132,10 @@ ufo %>%
 ufo %>%
   filter(Country == "United States")%>%
   filter(State_Province == "fl")%>%
-  group_by(City)%>%
-  filter(count(City) >= 100)%>%
+  filter(Latitude <= 140)%>%
+  filter(Longitude >= -100)%>%
   ggplot()+
-  geom_bar(aes(x = City), pch = 321)+ 
-  coord_flip()
+  geom_point(aes(x = Latitude, y = Longitude, color = Shape))+ 
   labs(title = "Shape Tendencies for Florida")+
     theme(legend.position ="none")
 ```
