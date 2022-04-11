@@ -28,7 +28,7 @@ library(data.table)
 
 # ***Data Frame Creation:***
 ```{r}
-ufo <- data.table::fread("ufo-complete-geocoded-time-standardized.csv")
+ufo <- read.xlsx("ufo-complete-geocoded-time-standardized.xlsx")
 ufo$Seconds <- as.double(ufo$Seconds)
 ufo$Shape <- as.factor(ufo$Shape)
 ufo$State_Province <- as.factor(ufo$State_Province)
@@ -36,9 +36,10 @@ ufo$Country <-  as.factor(ufo$Country)
 ufo$Latitude <- as.double(ufo$Latitude)
 ufo$Longitude <- as.double(ufo$Longitude)
 ufo$City <- as.factor(ufo$City)
-ufo$Date <- as.Date(ufo$Date, format = "%m/%d/%Y")
-ufo$Time <- as.ITime(ufo$Time, tz = "GMT")
-ufo
+#ufo$Date <- as.Date(ufo$Date, format = "%m/%d/%Y")
+#ufo$Time <- as.ITime(ufo$Time, tz = "GMT")
+#UFO <- ufo[-Column1]
+head(ufo)
 ```
 
 
@@ -46,7 +47,7 @@ ufo
 ```{r}
 ufo %>%
   group_by(Country)%>%
-  filter(n() >= 200)%>%
+  filter(n() >= 500              )%>%
   ggplot() +
   geom_bar(aes(x = Country, fill = Country))+ 
   coord_flip()+
@@ -58,6 +59,23 @@ ufo %>%
 As we can see, nearly all of our data is showing reports from within the United States. 
 Canada takes second place, followed by England. 
 It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
+
+
+## **Shapes in general:**
+```{r}
+ufo %>%
+  group_by(Shape)%>%
+  filter(n() >= 1000)%>%
+  ggplot()+
+  geom_bar(aes(x = Shape, fill = Shape))+ 
+  coord_flip()+
+  labs(title = "Shape Tendencies", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
+
 
 ## **Which States from the USA?**
 ```{r}
@@ -114,7 +132,7 @@ However, this is followed up by circularity and triangular shapes.
 ```{r}
 ufo %>%
   filter(Country == "United States")%>%
-  filter(State_Province == "fl")%>%
+  filter(State_Province == "FL")%>%
   group_by(Shape)%>%
   filter(n() >= 100)%>%
   ggplot()+
@@ -125,18 +143,39 @@ ufo %>%
     theme(legend.position ="none")
 ```
 
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  filter(State_Province == "FL")%>%
+  group_by(City)%>%
+  filter(n() >= 60)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in Florida for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
 
 
 ## Locations of Reports in FL
 ```{r}
 ufo %>%
   filter(Country == "United States")%>%
-  filter(State_Province == "fl")%>%
+  filter(State_Province == "FL")%>%
   filter(Latitude <= 140)%>%
   filter(Longitude >= -100)%>%
   ggplot()+
   geom_point(aes(x = Latitude, y = Longitude, color = Shape))+ 
   labs(title = "Shape Tendencies for Florida")+
     theme(legend.position ="none")
+```
+
+
+
+
+```{r}
+lr_1 <-glm(Country ~ ., family = "binomial", data = ufo)
+summary(lr_1)
 ```
 
