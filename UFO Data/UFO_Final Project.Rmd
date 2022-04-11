@@ -24,6 +24,12 @@ library(tidytext)
 library(forcats)
 library(lubridate)
 library(data.table)
+library(gbm)
+library(caret)
+library(randomForest)
+library(rpart.plot)
+library(tree)
+library(readr)
 ```
 
 # ***Data Frame Creation:***
@@ -47,7 +53,7 @@ head(ufo)
 ```{r}
 ufo %>%
   group_by(Country)%>%
-  filter(n() >= 500              )%>%
+  filter(n() >= 500)%>%
   ggplot() +
   geom_bar(aes(x = Country, fill = Country))+ 
   coord_flip()+
@@ -158,6 +164,23 @@ ufo %>%
 ```
 
 
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  filter(State_Province == "CA")%>%
+  group_by(City)%>%
+  filter(n() >= 100)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in California for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
+
+
 ## Locations of Reports in FL
 ```{r}
 ufo %>%
@@ -172,10 +195,70 @@ ufo %>%
 ```
 
 
+# Decision Tree Stuff for Analysis
+
+```{r}
+set.seed(1234)
+intrain <- createDataPartition(y=ufo$Country, p=0.8, list = FALSE)
+train_data <- ufo[intrain, ]
+test_data <- ufo[-intrain,]
+reg_control <- trainControl(method = "cv", number = 10)
+```
+
+```{r}
+ufo %>%
+  filter(Country == "Great Britain")%>%
+  filter(City != "Uk/England")%>%
+  group_by(City)%>%
+  filter(n() >= 35)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in Great Britain for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
 
 
 ```{r}
-lr_1 <-glm(Country ~ ., family = "binomial", data = ufo)
-summary(lr_1)
+ufo %>%
+  filter(Country == "Canada")%>%
+  #filter(City != "Uk/England")%>%
+  group_by(City)%>%
+  filter(n() >= 80)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in Canada for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  #filter(City != "Uk/England")%>%
+  group_by(City)%>%
+  filter(n() >= 350)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in United States for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+```{r}
+ufo %>%
+  filter(City == "Seattle" | City =="London" | City == "Toronto")%>%
+  #filter(City != "Uk/England")%>%
+  group_by(Shape)%>%
+  filter(n() >= 45)%>%
+  ggplot()+
+  geom_bar(aes(x = Shape, fill = Shape))+ 
+  coord_flip()+
+  labs(title = "Most Popular Cities and its Shapes for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
 ```
 
