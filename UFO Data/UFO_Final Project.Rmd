@@ -34,19 +34,27 @@ library(readr)
 
 # ***Data Frame Creation:***
 ```{r}
-ufo <- read.xlsx("ufo-complete-geocoded-time-standardized.xlsx")
+ufo <- read.xlsx("ufo-complete-geocoded-time-standardized.xlsx", )
 ufo$Seconds <- as.double(ufo$Seconds)
-ufo$Shape <- as.factor(ufo$Shape)
+ufo$Shape <- as.factor(ifelse(ufo$Shape == "Light", "Light", "Shape"))
 ufo$State_Province <- as.factor(ufo$State_Province)
 ufo$Country <-  as.factor(ufo$Country)
 ufo$Latitude <- as.double(ufo$Latitude)
 ufo$Longitude <- as.double(ufo$Longitude)
 ufo$City <- as.factor(ufo$City)
-#ufo$Date <- as.Date(ufo$Date, format = "%m/%d/%Y")
-#ufo$Time <- as.ITime(ufo$Time, tz = "GMT")
-#UFO <- ufo[-Column1]
-head(ufo)
+ufo$Date <- as.IDate(ufo$Date, origin = "1900/1/1")
+ufo$Date_Posted <- as.IDate(as.numeric(ufo$Date_Posted), origin = "1900/1/1")
+ufo$Time <- as.ITime(24*ufo$Time*3600)
+#ufo <- ufo[-Column1]
+ufo
 ```
+
+
+```{r}
+
+#predict region based off of hemisphere such as northern and southern hemisphere. 
+```
+
 
 
 # ***Observations by Country:***
@@ -199,11 +207,20 @@ ufo %>%
 
 ```{r}
 set.seed(1234)
-intrain <- createDataPartition(y=ufo$Country, p=0.8, list = FALSE)
+intrain <- createDataPartition(y=ufo$Shape, p=0.8, list = FALSE)
 train_data <- ufo[intrain, ]
 test_data <- ufo[-intrain,]
 reg_control <- trainControl(method = "cv", number = 10)
 ```
+
+```{r}
+rf <- rpart(Shape ~ Country, data = data.table(train_data)[, !c("Duration", "Summary", "X14")])
+rpart.plot(rf)
+```
+
+
+
+
 
 ```{r}
 ufo %>%
