@@ -1,20 +1,21 @@
 ---
 title: "STA 3241 Final Project"
 output:
-  html_document:
-    toc: true
-    toc_depth: '4'
-    df_print: paged
-    toc_float: true
   html_notebook:
     number_sections: no
     toc: true
     toc_depth: 4
     toc_float: true
+  html_document:
+    toc: true
+    toc_depth: '4'
+    df_print: paged
+    toc_float: true
   pdf_document:
     toc: true
     toc_depth: '4'
 ---
+
 # ***Library Loading:***
 ```{r, message=F}
 library(tidyverse)
@@ -34,7 +35,7 @@ library(readr)
 ```
 
 # ***Data Frame Creation:***
-```{r}
+```{r, warning=F}
 ufo <- read.xlsx("ufo-complete-geocoded-time-standardized.xlsx", )
 ufo$Seconds <- as.double(ufo$Seconds)
 ufo$Shape <- as.factor(ifelse(ufo$Shape == "Light", "Light", "Shape"))
@@ -51,9 +52,10 @@ ufo <- ufo %>%
 head(ufo)
 ```
 
-```{r}
 
+```{r}
 #predict region based off of hemisphere such as northern and southern hemisphere. 
+
 ```
 
 
