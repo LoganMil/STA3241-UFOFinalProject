@@ -16,7 +16,7 @@ output:
     toc_depth: '4'
 ---
 # ***Library Loading:***
-```{r}
+```{r, message=F}
 library(tidyverse)
 library(dplyr)
 library(openxlsx)
@@ -46,7 +46,8 @@ ufo$City <- as.factor(ufo$City)
 ufo$Date <- as.IDate(ufo$Date, origin = "1900/1/1")
 ufo$Date_Posted <- as.IDate(as.numeric(ufo$Date_Posted), origin = "1900/1/1")
 ufo$Time <- as.ITime(24*ufo$Time*3600)
-#ufo <- ufo[-Column1]
+ufo <- ufo %>% 
+  select(-Column1, X14)
 head(ufo)
 ```
 
