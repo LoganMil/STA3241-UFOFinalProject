@@ -24,29 +24,44 @@ library(tidytext)
 library(forcats)
 library(lubridate)
 library(data.table)
+library(gbm)
+library(caret)
+library(randomForest)
+library(rpart.plot)
+library(tree)
+library(readr)
 ```
 
 # ***Data Frame Creation:***
 ```{r}
-ufo <- data.table::fread("ufo-complete-geocoded-time-standardized.csv")
+ufo <- read.xlsx("ufo-complete-geocoded-time-standardized.xlsx", )
 ufo$Seconds <- as.double(ufo$Seconds)
-ufo$Shape <- as.factor(ufo$Shape)
+ufo$Shape <- as.factor(ifelse(ufo$Shape == "Light", "Light", "Shape"))
 ufo$State_Province <- as.factor(ufo$State_Province)
 ufo$Country <-  as.factor(ufo$Country)
 ufo$Latitude <- as.double(ufo$Latitude)
 ufo$Longitude <- as.double(ufo$Longitude)
 ufo$City <- as.factor(ufo$City)
-ufo$Date <- as.Date(ufo$Date, format = "%m/%d/%Y")
-ufo$Time <- as.ITime(ufo$Time, tz = "GMT")
+ufo$Date <- as.IDate(ufo$Date, origin = "1900/1/1")
+ufo$Date_Posted <- as.IDate(as.numeric(ufo$Date_Posted), origin = "1900/1/1")
+ufo$Time <- as.ITime(24*ufo$Time*3600)
+#ufo <- ufo[-Column1]
 ufo
 ```
+
+
+```{r}
+
+#predict region based off of hemisphere such as northern and southern hemisphere. 
+```
+
 
 
 # ***Observations by Country:***
 ```{r}
 ufo %>%
   group_by(Country)%>%
-  filter(n() >= 200)%>%
+  filter(n() >= 500)%>%
   ggplot() +
   geom_bar(aes(x = Country, fill = Country))+ 
   coord_flip()+
@@ -58,6 +73,23 @@ ufo %>%
 As we can see, nearly all of our data is showing reports from within the United States. 
 Canada takes second place, followed by England. 
 It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
+
+
+## **Shapes in general:**
+```{r}
+ufo %>%
+  group_by(Shape)%>%
+  filter(n() >= 1000)%>%
+  ggplot()+
+  geom_bar(aes(x = Shape, fill = Shape))+ 
+  coord_flip()+
+  labs(title = "Shape Tendencies", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
+
 
 ## **Which States from the USA?**
 ```{r}
@@ -114,7 +146,7 @@ However, this is followed up by circularity and triangular shapes.
 ```{r}
 ufo %>%
   filter(Country == "United States")%>%
-  filter(State_Province == "fl")%>%
+  filter(State_Province == "FL")%>%
   group_by(Shape)%>%
   filter(n() >= 100)%>%
   ggplot()+
@@ -125,18 +157,125 @@ ufo %>%
     theme(legend.position ="none")
 ```
 
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  filter(State_Province == "FL")%>%
+  group_by(City)%>%
+  filter(n() >= 60)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in Florida for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  filter(State_Province == "CA")%>%
+  group_by(City)%>%
+  filter(n() >= 100)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in California for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
 
 
 ## Locations of Reports in FL
 ```{r}
 ufo %>%
   filter(Country == "United States")%>%
-  filter(State_Province == "fl")%>%
+  filter(State_Province == "FL")%>%
   filter(Latitude <= 140)%>%
   filter(Longitude >= -100)%>%
   ggplot()+
   geom_point(aes(x = Latitude, y = Longitude, color = Shape))+ 
   labs(title = "Shape Tendencies for Florida")+
+    theme(legend.position ="none")
+```
+
+
+# Decision Tree Stuff for Analysis
+
+```{r}
+set.seed(1234)
+intrain <- createDataPartition(y=ufo$Shape, p=0.8, list = FALSE)
+train_data <- ufo[intrain, ]
+test_data <- ufo[-intrain,]
+reg_control <- trainControl(method = "cv", number = 10)
+```
+
+```{r}
+rf <- rpart(Shape ~ Country, data = data.table(train_data)[, !c("Duration", "Summary", "X14")])
+rpart.plot(rf)
+```
+
+
+
+
+
+```{r}
+ufo %>%
+  filter(Country == "Great Britain")%>%
+  filter(City != "Uk/England")%>%
+  group_by(City)%>%
+  filter(n() >= 35)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in Great Britain for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+
+```{r}
+ufo %>%
+  filter(Country == "Canada")%>%
+  #filter(City != "Uk/England")%>%
+  group_by(City)%>%
+  filter(n() >= 80)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in Canada for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+```{r}
+ufo %>%
+  filter(Country == "United States")%>%
+  #filter(City != "Uk/England")%>%
+  group_by(City)%>%
+  filter(n() >= 350)%>%
+  ggplot()+
+  geom_bar(aes(x = City, fill = City))+ 
+  coord_flip()+
+  labs(title = "'The Hottest' Cities in United States for UFO Reports", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none")
+```
+
+```{r}
+ufo %>%
+  filter(City == "Seattle" | City =="London" | City == "Toronto")%>%
+  #filter(City != "Uk/England")%>%
+  group_by(Shape)%>%
+  filter(n() >= 45)%>%
+  ggplot()+
+  geom_bar(aes(x = Shape, fill = Shape))+ 
+  coord_flip()+
+  labs(title = "Most Popular Cities and its Shapes for UFO Reports", 
+       y = "Number of Specific Reports")+
     theme(legend.position ="none")
 ```
 
