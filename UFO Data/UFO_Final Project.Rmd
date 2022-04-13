@@ -87,9 +87,11 @@ ufo %>%
   theme(legend.position ="none")
 ```
 
-```{r, warning=F}
-library(hrbrthemes)
+As we can see, nearly all of our data is showing reports from within the United States. 
+Canada takes second place, followed by England. 
+It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
 
+```{r, warning=F}
 ufo_count %>%
   filter(Country != c("United States", "Canada", "Great Britain", "Australia")) %>% 
   ggplot(aes(x = reorder(Country, Count),
@@ -103,14 +105,9 @@ ufo_count %>%
        x = "# of reports",
        y = "Country"
        ) +
-  theme_ip
+  theme_minimal() +
   theme(legend.position = "none")
 ```
-
-As we can see, nearly all of our data is showing reports from within the United States. 
-Canada takes second place, followed by England. 
-It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
-
 
 ## **Shapes in general:**
 ```{r}
