@@ -64,27 +64,44 @@ create separate df with the count of each country
 ```{r}
 ufo$Country <-  as.character(ufo$Country)
 
-ufo_count <- as.data.frame(table(ufo$Country))
-colnames(ufo_count) <- c('Country','Count')
-ufo_count <- ufo_count %>% 
+ufo_country_count <- as.data.frame(table(ufo$Country))
+colnames(ufo_country_count) <- c('Country','Count')
+ufo_country_count <- ufo_country_count %>% 
   arrange(desc(Count))
 
 ufo$Country <-  as.factor(ufo$Country)
 ```
 
+create separate df with the count of each shape
+```{r}
+ufo$Shape <-  as.character(ufo$Shape)
+
+ufo_shape_count <- as.data.frame(table(ufo$Shape))
+colnames(ufo_shape_count) <- c('Shape','Count')
+ufo_shape_count <- ufo_shape_count %>% 
+  arrange(desc(Count))
+
+ufo$Shape <-  as.factor(ufo$Shape)
+```
 
 # ***Observations by Country:***
 ```{r}
-ufo %>%
-  group_by(Country)%>%
-  filter(n() >= 500)%>%
-  ggplot() +
-  geom_bar(aes(x = Country, fill = Country))+
+ufo_country_count %>%
+  filter(Count >= 500) %>%
+  ggplot(aes(x = reorder(Country, Count),
+             y = Count,
+             fill = Country)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
   coord_flip()+
   labs(title = "Reports by Country",
+       x = "Country",
        y = "Number of Specific Reports",
        caption = "*out of 27 total countries, these four are the only ones with >= 500 reports")+
-  theme(legend.position ="none")
+  theme(legend.position ="none") +
+  scale_y_continuous(limits = c(0, 85000))
 ```
 
 As we can see, nearly all of our data is showing reports from within the United States. 
@@ -92,37 +109,99 @@ Canada takes second place, followed by England.
 It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
 
 ```{r, warning=F}
-ufo_count %>%
-  filter(Country != c("United States", "Canada", "Great Britain", "Australia")) %>% 
+ufo_country_count %>%
+  filter(Count < 500) %>% 
   ggplot(aes(x = reorder(Country, Count),
              y = Count,
-             fill = Country
-             )
-         ) +
+             fill = Country)) +
   coord_flip() +
   geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
   labs(title = "Countries with less than 500 reports",
        x = "# of reports",
        y = "Country"
        ) +
   theme_minimal() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  scale_y_continuous(limits = c(0, 275))
 ```
 
 ## **Shapes in general:**
 ```{r}
-ufo %>%
-  group_by(Shape)%>%
-  filter(n() >= 1000)%>%
-  ggplot()+
-  geom_bar(aes(x = Shape, fill = Shape))+ 
-  coord_flip()+
+ufo_shape_count %>%
+#  filter(Count >= 1000) %>%
+#  filter(ufo_shape_count[1:10, ]) %>% 
+  ggplot(aes(x = reorder(Shape, Count),
+             y = Count,
+             fill = Shape)) +
+  coord_flip() +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
   labs(title = "Shape Tendencies", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none") +
+  scale_y_continuous(limits = c(0, 18500))
+```
+
+## **Top 10 Shapes:**
+```{r}
+ufo_shape_count[1:10, ] %>%
+#  filter(Count >= 1000) %>%
+#  filter(ufo_shape_count[1:10, ]) %>% 
+  ggplot(aes(x = reorder(Shape, Count),
+             y = Count,
+             fill = Shape)) +
+  coord_flip() +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
+  labs(title = "Top 10 Commonly Reported Shapes", 
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none") +
+  scale_y_continuous(limits = c(0, 18500))
+```
+## **Rest of Shapes:**
+```{r}
+ufo_shape_count[-9:0, ] %>%
+#  filter(Count >= 1000) %>%
+#  filter(ufo_shape_count[1:10, ]) %>% 
+  ggplot(aes(x = reorder(Shape, Count),
+             y = Count,
+             fill = Shape)) +
+  coord_flip() +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
+  labs(title = "Rest of Shape Tendencies",
+       x = "Reported Shape",
+       y = "Number of Specific Reports")+
+    theme(legend.position ="none") +
+  scale_y_continuous(limits = c(0, 2700))
+```
+
+## **Shape Tendencies > 200:**
+```{r}
+ufo_shape_count[-21:0, ] %>%
+#  filter(Count >= 1000) %>%
+#  filter(ufo_shape_count[1:10, ]) %>% 
+  ggplot(aes(x = reorder(Shape, Count),
+             y = Count,
+             fill = Shape)) +
+  coord_flip() +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
+  labs(title = "Shape Tendencies < 200", 
        y = "Number of Specific Reports")+
     theme(legend.position ="none")
 ```
-
-
 
 
 ## **Which States from the USA?**
