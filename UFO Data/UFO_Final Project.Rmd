@@ -59,8 +59,9 @@ head(ufo)
 
 ```
 
+# ***Create Separate data frames to hold the count values***
 
-create separate df with the count of each country
+## create separate df with the count of reports by **country**
 ```{r}
 ufo$Country <-  as.character(ufo$Country)
 
@@ -72,9 +73,9 @@ ufo_country_count <- ufo_country_count %>%
 ufo$Country <-  as.factor(ufo$Country)
 ```
 
-create separate df with the count of each shape
+## create separate df with the count of each **shape** reported
 ```{r}
-ufo$Shape <-  as.character(ufo$Shape)
+ufo$State_Province <-  as.character(ufo$State_Province)
 
 ufo_shape_count <- as.data.frame(table(ufo$Shape))
 colnames(ufo_shape_count) <- c('Shape','Count')
@@ -82,6 +83,25 @@ ufo_shape_count <- ufo_shape_count %>%
   arrange(desc(Count))
 
 ufo$Shape <-  as.factor(ufo$Shape)
+```
+
+## create separate df with the count of reports by **U.S. state**
+```{r}
+ufo$Country <-  as.character(ufo$Country)
+
+# First make a df of reports only in the U.S.
+ufo_USA <- ufo %>% 
+  filter(Country == "United States")
+
+ufo_USA$State_Province <-  as.character(ufo_USA$State_Province)
+
+ufo_state_count <- as.data.frame(table(ufo_USA$State_Province))
+colnames(ufo_state_count) <- c('State_Province','Count')
+ufo_state_count <- ufo_state_count %>% 
+  arrange(desc(Count))
+
+ufo$Country <-  as.factor(ufo$Country)
+ufo_USA$State_Province <- as.factor(ufo_USA$State_Province)
 ```
 
 # ***Observations by Country:***
@@ -105,12 +125,12 @@ ufo_country_count %>%
 ```
 
 As we can see, nearly all of our data is showing reports from within the United States. 
-Canada takes second place, followed by England. 
+Canada takes second place, followed by Great Britain 
 It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
 
 ```{r, warning=F}
-ufo_country_count %>%
-  filter(Count < 500) %>% 
+ufo_country_count[1:6, ] %>%
+#  filter(Count < 500) %>% 
   ggplot(aes(x = reorder(Country, Count),
              y = Count,
              fill = Country)) +
@@ -125,7 +145,7 @@ ufo_country_count %>%
        ) +
   theme_minimal() +
   theme(legend.position = "none") +
-  scale_y_continuous(limits = c(0, 275))
+  scale_y_continuous(limits = c(0, 82000))
 ```
 
 ## **Shapes in general:**
@@ -206,16 +226,23 @@ ufo_shape_count[-21:0, ] %>%
 
 ## **Which States from the USA?**
 ```{r}
-ufo %>%
-  filter(Country == "United States")%>%
-  group_by(State_Province)%>%
-  filter(n() >= 1000)%>%
-  ggplot()+
-  geom_bar(aes(x = State_Province, fill = State_Province))+ 
+ufo_state_count %>%
+#  filter(Country == "United States")%>%
+#  group_by(State_Province)%>%
+  filter(Count >= 1000)%>%
+  ggplot(aes(x = reorder(State_Province, Count),
+             y = Count,
+             fill = State_Province))+
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold")+ 
   coord_flip()+
-  labs(title = "Reports by State", 
+  labs(title = "Reports by State",
+       x = "State/Province",
        y = "Number of Specific Reports")+
-  theme(legend.position ="none")#+
+  theme(legend.position ="none") +
+  scale_y_continuous(limits = c(0, 10800))#+
   #facet_wrap(~ State_Province, scales ="free_y")
 ```
 
