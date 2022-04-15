@@ -75,7 +75,7 @@ ufo$Country <-  as.factor(ufo$Country)
 
 ## create separate df with the count of each **shape** reported
 ```{r}
-ufo$State_Province <-  as.character(ufo$State_Province)
+ufo$Shape <-  as.character(ufo$Shape)
 
 ufo_shape_count <- as.data.frame(table(ufo$Shape))
 colnames(ufo_shape_count) <- c('Shape','Count')
@@ -101,7 +101,35 @@ ufo_state_count <- ufo_state_count %>%
   arrange(desc(Count))
 
 ufo$Country <-  as.factor(ufo$Country)
-ufo_USA$State_Province <- as.factor(ufo_USA$State_Province)
+ufo$State_Province <- as.factor(ufo$State_Province)
+```
+
+## create df for **training set**
+```{r}
+ufo_to_train <- ufo_USA 
+
+ufo_to_train <- ufo_to_train %>% 
+  filter(Shape %in% c("light", "sphere", "circle", "disk", "cigar", "changing", "unknown", "triangle", "other", "oval", "cylinder", "fireball", "rectangle", "formation", "flash", "chevron", "egg", "cone", "diamond", "teardrop", "cross")) %>%
+  select(-Summary, -X14, -shape_rev, -Duration, -City) %>% 
+  drop_na()
+
+# ufo_to_train$Latitude <-  as.float(ufo_to_train$Latitude)
+# ufo_to_train$Longitude <-  as.float(ufo_to_train$Longitude)
+
+ufo_to_train <- ufo_to_train %>%
+  filter(Latitude != 0.00000) %>%
+  filter(Longitude != 0.00000)
+```
+
+```{r}
+ufo_to_train$Shape <-  as.character(ufo_to_train$Shape)
+
+ufo_tt_shape_count <- as.data.frame(table(ufo_to_train$Shape))
+colnames(ufo_tt_shape_count) <- c('Shape','Count')
+ufo_tt_shape_count <- ufo_tt_shape_count %>% 
+  arrange(desc(Count))
+
+ufo_to_train$Shape <-  as.factor(ufo_to_train$Shape)
 ```
 
 # ***Observations by Country:***
@@ -345,13 +373,50 @@ ufo %>%
 
 # Decision Tree Stuff for Analysis
 
+prep the data
+
 ```{r}
 set.seed(1234)
-intrain <- createDataPartition(y=ufo$Shape, p=0.8, list = FALSE)
-train_data <- ufo[intrain, ]
-test_data <- ufo[-intrain,]
-reg_control <- trainControl(method = "cv", number = 10)
+
+intrain <- createDataPartition(y = ufo_to_train$Shape, p=0.8, list = FALSE)
+train_data <- ufo_to_train[intrain, ]
+test_data <- ufo_to_train[-intrain, ]
 ```
+
+Set up Crossvalidation
+
+```{r}
+reg_control <-trainControl(method="cv", number = 10)
+```
+
+Bagging
+
+```{r}
+bag_ufo <- randomForest(Shape ~ .,
+                        data = train_data,
+                        mtry = 10,
+                        importance = T)
+bag_ufo
+```
+
+```{r}
+is.na()
+```
+
+
+The argument mtry=12 indicates that all 12 predictors should be considered for each split of the tree - in other words bagging should be done. 
+
+Let us check the performance of this model on the test data 
+
+```{r}
+y_hat_boston <- predict(bag_boston,
+                        test_data1)
+plot(y_hat_boston,
+     test_data1[, 13])
+abline(0,1)
+```
+
+
 
 ```{r}
 rf <- rpart(Shape ~ Country, data = data.table(train_data)[, !c("Duration", "Summary", "X14")])
