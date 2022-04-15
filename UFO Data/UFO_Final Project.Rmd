@@ -399,29 +399,32 @@ bag_ufo <- randomForest(Shape ~ .,
 bag_ufo
 ```
 
+# Randomm Forest UFO
 ```{r}
-is.na()
+rf_ufo <- randomForest(Shape ~ .,
+                       data = train_data,
+                       mtry = 6,
+                       importance = T,
+                       ntree = 25)
+rf_ufo
 ```
 
-
-The argument mtry=12 indicates that all 12 predictors should be considered for each split of the tree - in other words bagging should be done. 
-
-Let us check the performance of this model on the test data 
-
 ```{r}
-y_hat_boston <- predict(bag_boston,
-                        test_data1)
-plot(y_hat_boston,
-     test_data1[, 13])
+yhat_rf_ufo <- predict(rf_ufo,
+                       test_data)
+plot(yhat_rf_ufo,
+     test_data[,9])
 abline(0,1)
 ```
 
-
+```{r}
+importance(rf_ufo)
+```
 
 ```{r}
-rf <- rpart(Shape ~ Country, data = data.table(train_data)[, !c("Duration", "Summary", "X14")])
-rpart.plot(rf)
+varImpPlot(rf_ufo)
 ```
+
 
 
 
