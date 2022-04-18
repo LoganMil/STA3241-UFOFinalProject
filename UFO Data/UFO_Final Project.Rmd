@@ -48,18 +48,18 @@ ufo$City <- as.factor(ufo$City)
 ufo$Date <- as.IDate(ufo$Date, origin = "1900/1/1")
 ufo$Date_Posted <- as.IDate(as.numeric(ufo$Date_Posted), origin = "1900/1/1")
 ufo$Time <- as.ITime(24*ufo$Time*3600)
+ufo$Shape <- as.factor(ufo$Shape)
 ufo <- ufo %>% 
-  select(-Column1, X14)
+  select(-Column1, -X14)
 head(ufo)
 ```
 
-
+## Data Dictionary
 ```{r}
-#predict region based off of hemisphere such as northern and southern hemisphere. 
 
 ```
 
-# ***Create Separate data frames to hold the count values***
+# ***Create a data frames to hold the count values***
 
 ## create separate df with the count of reports by **country**
 ```{r}
@@ -73,25 +73,33 @@ ufo_country_count <- ufo_country_count %>%
 ufo$Country <-  as.factor(ufo$Country)
 ```
 
-## create separate df with the count of each **shape** reported
+## create separate df with the count of each **shape** reported globally and in the U.S.
 ```{r}
-ufo$Shape <-  as.character(ufo$Shape)
+#ufo$Shape <-  as.character(ufo$Shape)
 
-ufo_shape_count <- as.data.frame(table(ufo$Shape))
-colnames(ufo_shape_count) <- c('Shape','Count')
-ufo_shape_count <- ufo_shape_count %>% 
+ufo_shape_count_global <- as.data.frame(table(ufo$Shape)) %>% 
+  na.omit()
+colnames(ufo_shape_count_global) <- c('Shape','Count')
+ufo_shape_count_global <- ufo_shape_count_global %>% 
   arrange(desc(Count))
 
-ufo$Shape <-  as.factor(ufo$Shape)
+# make a df of reports only in the U.S.
+ufo_USA <- ufo %>% 
+  na.omit() %>% 
+  filter(Country == "United States")
+
+ufo_shape_count_us <- as.data.frame(table(ufo_USA$Shape)) %>% 
+  na.omit()
+colnames(ufo_shape_count_us) <- c('Shape','Count')
+ufo_shape_count_us <- ufo_shape_count_us %>% 
+  arrange(desc(Count))
+
+#ufo$Shape <-  as.factor(ufo$Shape)
 ```
 
 ## create separate df with the count of reports by **U.S. state**
 ```{r}
 ufo$Country <-  as.character(ufo$Country)
-
-# First make a df of reports only in the U.S.
-ufo_USA <- ufo %>% 
-  filter(Country == "United States")
 
 ufo_USA$State_Province <-  as.character(ufo_USA$State_Province)
 
@@ -110,11 +118,8 @@ ufo_to_train <- ufo_USA
 
 ufo_to_train <- ufo_to_train %>% 
   filter(Shape %in% c("light", "sphere", "circle", "disk", "cigar", "changing", "unknown", "triangle", "other", "oval", "cylinder", "fireball", "rectangle", "formation", "flash", "chevron", "egg", "cone", "diamond", "teardrop", "cross")) %>%
-  select(-Summary, -X14, -shape_rev, -Duration, -City) %>% 
-  drop_na()
-
-# ufo_to_train$Latitude <-  as.float(ufo_to_train$Latitude)
-# ufo_to_train$Longitude <-  as.float(ufo_to_train$Longitude)
+  select(-Summary, -shape_rev, -Duration, -City, -Country) %>% 
+  na.omit()
 
 ufo_to_train <- ufo_to_train %>%
   filter(Latitude != 0.00000) %>%
@@ -133,6 +138,25 @@ ufo_to_train$Shape <-  as.factor(ufo_to_train$Shape)
 ```
 
 # ***Observations by Country:***
+```{r}
+ufo_country_count %>%
+  # filter(Count >= 500) %>%
+  ggplot(aes(x = reorder(Country, Count),
+             y = Count,
+             fill = Country)) +
+  geom_bar(stat="identity") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold") +
+  coord_flip()+
+  labs(title = "Reports by Country",
+       x = "Country",
+       y = "Number of Specific Reports",
+       caption = "*out of 27 total countries, these four are the only ones with >= 500 reports")+
+  theme(legend.position ="none") +
+  scale_y_continuous(limits = c(0, 85000))
+```
+
 ```{r}
 ufo_country_count %>%
   filter(Count >= 500) %>%
@@ -157,8 +181,8 @@ Canada takes second place, followed by Great Britain
 It's noteworthy that Australia, India, and Mexico are displayed on this graph as there are over 600 unique levels. 
 
 ```{r, warning=F}
-ufo_country_count[1:6, ] %>%
-#  filter(Count < 500) %>% 
+ufo_country_count %>%
+  filter(Count < 500) %>%
   ggplot(aes(x = reorder(Country, Count),
              y = Count,
              fill = Country)) +
@@ -172,13 +196,13 @@ ufo_country_count[1:6, ] %>%
        y = "Country"
        ) +
   theme_minimal() +
-  theme(legend.position = "none") +
-  scale_y_continuous(limits = c(0, 82000))
+  theme(legend.position = "none")
+  # scale_y_continuous(limits = c(0, 82000))
 ```
 
 ## **Shapes in general:**
 ```{r}
-ufo_shape_count %>%
+ufo_shape_count_global %>%
 #  filter(Count >= 1000) %>%
 #  filter(ufo_shape_count[1:10, ]) %>% 
   ggplot(aes(x = reorder(Shape, Count),
@@ -197,7 +221,7 @@ ufo_shape_count %>%
 
 ## **Top 10 Shapes:**
 ```{r}
-ufo_shape_count[1:10, ] %>%
+ufo_shape_count_global[1:10, ] %>%
 #  filter(Count >= 1000) %>%
 #  filter(ufo_shape_count[1:10, ]) %>% 
   ggplot(aes(x = reorder(Shape, Count),
@@ -208,14 +232,14 @@ ufo_shape_count[1:10, ] %>%
   geom_text(aes(label = Count),
             hjust = -0.1,
             fontface = "bold") +
-  labs(title = "Top 10 Commonly Reported Shapes", 
+  labs(title = "Top 10 Commonly Reported Shapes Globally", 
        y = "Number of Specific Reports")+
     theme(legend.position ="none") +
   scale_y_continuous(limits = c(0, 18500))
 ```
 ## **Rest of Shapes:**
 ```{r}
-ufo_shape_count[-9:0, ] %>%
+ufo_shape_count_global[-10:0, ] %>%
 #  filter(Count >= 1000) %>%
 #  filter(ufo_shape_count[1:10, ]) %>% 
   ggplot(aes(x = reorder(Shape, Count),
@@ -230,27 +254,8 @@ ufo_shape_count[-9:0, ] %>%
        x = "Reported Shape",
        y = "Number of Specific Reports")+
     theme(legend.position ="none") +
-  scale_y_continuous(limits = c(0, 2700))
+  scale_y_continuous(limits = c(0, 2250))
 ```
-
-## **Shape Tendencies > 200:**
-```{r}
-ufo_shape_count[-21:0, ] %>%
-#  filter(Count >= 1000) %>%
-#  filter(ufo_shape_count[1:10, ]) %>% 
-  ggplot(aes(x = reorder(Shape, Count),
-             y = Count,
-             fill = Shape)) +
-  coord_flip() +
-  geom_bar(stat="identity") +
-  geom_text(aes(label = Count),
-            hjust = -0.1,
-            fontface = "bold") +
-  labs(title = "Shape Tendencies < 200", 
-       y = "Number of Specific Reports")+
-    theme(legend.position ="none")
-```
-
 
 ## **Which States from the USA?**
 ```{r}
@@ -293,16 +298,21 @@ ufo %>%
 
 # ***Shapes Reported within the U.S.***
 ```{r}
-ufo %>%
-  filter(Country == "United States")%>%
-  group_by(Shape)%>%
-  filter(n() >= 1000)%>%
-  ggplot()+
-  geom_bar(aes(x = Shape, fill = Shape))+ 
+ufo_shape_count_us %>%
+  filter(Count >= 1000)%>%
+  ggplot(aes(x = reorder(Shape, Count),
+             y = Count,
+             fill = Shape))+
+  geom_bar(stat = "identity")+ 
   coord_flip()+
-  labs(title = "Shape Tendencies", 
+  labs(title = "Shape Tendencies",
+       x = "Shape",
        y = "Number of Specific Reports")+
-    theme(legend.position ="none")
+    theme(legend.position ="none") +
+  geom_text(aes(label = Count),
+            hjust = -0.1,
+            fontface = "bold")  +
+  scale_y_continuous(limits = c(0, 16000))
 ```
 
 Light is the most frequent response. 
@@ -373,12 +383,112 @@ ufo %>%
 
 # Decision Tree Stuff for Analysis
 
-prep the data
+## prep the data
+
+***Convert character variables to a usable numeric variable***
+```{r}
+SP <- c("CA", "WA", "FL", "TX", "NY", "AZ","IL", "PA", "OH", "MI", "NC", "OR", "MO", "CO", "NJ", "IN", "VA", "GA", "MA", "WI", "TN", "MN", "SC", "CT", "KY", "NV", "MD", "NM", "OK", "UT", "IA", "AL", "AR", "KS", "ME", "LA", "ID", "NH", "MT", "WV", "MS", "NE", "AK", "HI", "VT", "RI", "WY", "SD", "DE", "ND", "DC", "PR", "SK", "VI")
+Value <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54)
+US_SP_Key <- data.frame(SP, Value)
+rownames(US_SP_Key) <- US_SP_Key[,1]
+US_SP_Key <- US_SP_Key %>% 
+  select(-SP)
+```
+
+
+```{r}
+ufo_to_train <- ufo_to_train %>% 
+  mutate(SP_Num = State_Province)
+```
+
+```{r}
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "CA"] <- "1"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "WA"] <- "2"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "FL"] <- "3"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "TX"] <- "4"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NY"] <- "5"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "AZ"] <- "6"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "IL"] <- "7"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "PA"] <- "8"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "OH"] <- "9"
+
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MI"] <- "10"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NC"] <- "11"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "OR"] <- "12"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MO"] <- "13"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "CO"] <- "14"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NJ"] <- "15"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "IN"] <- "16"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "VA"] <- "17"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "GA"] <- "18"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MA"] <- "19"
+
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "WI"] <- "20"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "TN"] <- "21"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MN"] <- "22"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "SC"] <- "23"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "CT"] <- "24"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "KY"] <- "25"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NV"] <- "26"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MD"] <- "27"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NM"] <- "28"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "OK"] <- "29"
+
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "UT"] <- "30"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "IA"] <- "31"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "AL"] <- "32"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "AR"] <- "33"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "KS"] <- "34"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "ME"] <- "35"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "LA"] <- "36"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "ID"] <- "37"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NH"] <- "38"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MT"] <- "39"
+
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "WV"] <- "40"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "MS"] <- "41"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "NE"] <- "42"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "AK"] <- "43"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "HI"] <- "44"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "VT"] <- "45"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "RI"] <- "46"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "WY"] <- "47"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "SD"] <- "48"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "DE"] <- "49"
+
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "ND"] <- "50"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "DC"] <- "51"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "PR"] <- "52"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "SK"] <- "53"
+ufo_to_train$SP_Num[ufo_to_train$SP_Num == "VI"] <- "54"
+
+ufo_to_train$SP_Num <- as.numeric(ufo_to_train$SP_Num)
+```
+
+```{r}
+#glimpse(ufo_to_train)
+
+str(ufo_to_train)
+```
+
+
+standardize the data
+```{r}
+ufo_to_train$Date <- as.numeric(ufo_to_train$Date)
+ufo_to_train$Date <- as.IDate(ufo_to_train$Date)
+
+std_ufo_data <- ufo_to_train %>% 
+  select(-State_Province) %>% 
+  scale(center = T,
+        scale = T)
+```
+
+## set the training set
 
 ```{r}
 set.seed(1234)
 
-intrain <- createDataPartition(y = ufo_to_train$Shape, p=0.8, list = FALSE)
+intrain <- createDataPartition(y = std_ufo_data$Sha , p=0.8, list = FALSE)
 train_data <- ufo_to_train[intrain, ]
 test_data <- ufo_to_train[-intrain, ]
 ```
@@ -430,7 +540,7 @@ varImpPlot(rf_ufo)
 
 
 
-```{r}
+p[-```{r}
 ufo %>%
   filter(Country == "Great Britain")%>%
   filter(City != "Uk/England")%>%
